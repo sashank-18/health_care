@@ -98,10 +98,13 @@ def store_alert(patient_id, message):
         logger.error(f"Alert store error: {e}")
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
-@app.before_first_request
 def startup():
     ensure_tables_exist()
     logger.info("App started with IAM role authentication")
+
+if __name__ == "__main__":
+    startup()   # <-- call manually before app starts
+    app.run(host="0.0.0.0", port=5000)
 
 # ─── Routes (Pages) ───────────────────────────────────────────────────────────
 @app.route("/")
