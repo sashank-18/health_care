@@ -102,9 +102,6 @@ def startup():
     ensure_tables_exist()
     logger.info("App started with IAM role authentication")
 
-if __name__ == "__main__":
-    startup()   # <-- call manually before app starts
-    app.run(host="0.0.0.0", port=5000)
 
 # ─── Routes (Pages) ───────────────────────────────────────────────────────────
 @app.route("/")
@@ -237,5 +234,9 @@ def health():
 
 
 # ─── Run ──────────────────────────────────────────────────────────────────────
+# REMOVE all earlier __main__ blocks
+
+# keep ONLY this at bottom
 if __name__ == "__main__":
+    startup()
     app.run(host="0.0.0.0", port=5000)
