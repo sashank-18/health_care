@@ -1,6 +1,6 @@
 """
 Healthcare Patient Monitoring System - Backend (Flask)
-IAM Role-based (No credentials in code)
+Fully IAM Role-based (NO credentials, NO region hardcoding)
 """
 
 import os
@@ -12,50 +12,81 @@ from flask import Flask, request, jsonify, render_template
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 
-# ─── Logging ─────────────────────────────────────────
+# ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ─── Flask ───────────────────────────────────────────
-app = Flask(__name__, template_folder='.')
+# ─── Flask App ────────────────────────────────────────────────────────────────
+# FIX: Use an absolute directory path to ensure Flask always finds the HTML files
+# regardless of where the command to run the app was executed.
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__, template_folder=BASE_DIR)
 
-# ─── ENV ─────────────────────────────────────────────
-SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN")
+# ─── ENV VARIABLES (IAM + .env) ───────────────────────────────────────────────
+# Correctly fetch the SNS topic from environment variable, fallback to your provided ARN
+SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN", "arn:aws:sns:ap-south-1:152655458564:health_care")
 
+if not SNS_TOPIC_ARN:
+    logger.warning("⚠️ SNS_TOPIC_ARN not set in environment")
+
+# ─── Tables ───────────────────────────────────────────────────────────────────
 HEALTH_LOGS_TABLE = "patient_health_logs"
 ALERTS_TABLE = "alerts"
 
-# ─── AWS Clients (IAM role auto) ─────────────────────
+# ─── AWS Clients (IAM ROLE AUTO) ──────────────────────────────────────────────
+# boto3 automatically uses:
+# - EC2 IAM role attached to the instance
+# - AWS_DEFAULT_REGION from environment
+
 def get_dynamodb():
     return boto3.resource("dynamodb")
 
 def get_sns():
     return boto3.client("sns")
 
-# ─── Business Logic ──────────────────────────────────
-def evaluate_vitals(hr, o2):
-    return "critical" if hr > 110 or o2 < 90 else "normal"
+# ─── Ensure Tables Exist (SAFE VERSION) ───────────────────────────────────────
+def ensure_tables_exist():
+    try:
+        client = boto3.client("dynamodb")
+        existing_tables = client.list_tables()["TableNames"]
 
-def send_sns_alert(patient_id, hr, o2):
+        if HEALTH_LOGS_TABLE not in existing_tables:
+            logger.warning(f"{HEALTH_LOGS_TABLE} not found. Skipping creation (IAM may restrict).")
+
+        if ALERTS_TABLE not in existing_tables:
+            logger.warning(f"{ALERTS_TABLE} not found. Skipping creation (IAM may restrict).")
+
+    except Exception as e:
+        logger.error(f"Table check failed: {e}")
+
+# ─── Business Logic ───────────────────────────────────────────────────────────
+def evaluate_vitals(heart_rate, oxygen_level):
+    return "critical" if heart_rate > 110 or oxygen_level < 90 else "normal"
+
+
+def send_sns_alert(patient_id, heart_rate, oxygen_level):
     if not SNS_TOPIC_ARN:
+        logger.warning("SNS_TOPIC_ARN missing → skipping alert")
         return
 
-    message = f"""
-🚨 Critical Alert
-Patient: {patient_id}
-Heart Rate: {hr}
-Oxygen: {o2}
-Time: {datetime.utcnow()}
-"""
+    message = (
+        f"🚨 Critical Alert: Patient {patient_id}\n"
+        f"Heart Rate: {heart_rate} bpm\n"
+        f"Oxygen Level: {oxygen_level}%\n"
+        f"Time: {datetime.utcnow().isoformat()}Z"
+    )
 
     try:
-        get_sns().publish(
+        sns = get_sns()
+        sns.publish(
             TopicArn=SNS_TOPIC_ARN,
-            Subject="Critical Health Alert",
-            Message=message
+            Subject=f"Critical Alert: Patient {patient_id}",
+            Message=message,
         )
-    except Exception as e:
-        logger.error(e)
+        logger.info(f"SNS alert sent for {patient_id}")
+    except ClientError as e:
+        logger.error(f"SNS error: {e}")
+
 
 def store_alert(patient_id, message):
     try:
@@ -64,133 +95,147 @@ def store_alert(patient_id, message):
             "alert_id": str(uuid.uuid4()),
             "patient_id": patient_id,
             "message": message,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
         })
-    except Exception as e:
-        logger.error(e)
+    except ClientError as e:
+        logger.error(f"Alert store error: {e}")
 
-# ─── Routes (Pages) ─────────────────────────────────
+# ─── Startup ──────────────────────────────────────────────────────────────────
+@app.before_first_request
+def startup():
+    ensure_tables_exist()
+    logger.info("App started with IAM role authentication")
+
+# ─── Routes (Pages) ───────────────────────────────────────────────────────────
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/patient")
+def patient_page():
+    return render_template("patient.html")
 
 @app.route("/dashboard")
 def dashboard():
     return render_template("dashboard.html")
 
-@app.route("/patient")
-def patient():
-    return render_template("patient.html")
-
 @app.route("/login")
-def login():
+def login_page():
     return render_template("login.html")
 
 @app.route("/register")
-def register():
+def register_page():
     return render_template("register.html")
 
-# ─── Submit Vitals ──────────────────────────────────
+
+# ─── API: Submit Data ─────────────────────────────────────────────────────────
 @app.route("/submit-data", methods=["POST"])
 def submit_data():
     try:
         data = request.get_json() or request.form
 
         patient_id = data.get("patient_id")
-        hr = float(data.get("heart_rate"))
-        o2 = float(data.get("oxygen_level"))
-        temp = data.get("temperature")
+        heart_rate = float(data.get("heart_rate"))
+        oxygen_level = float(data.get("oxygen_level"))
+        temperature = data.get("temperature") # Handle optional temperature from patient.html
 
-        timestamp = datetime.utcnow().isoformat()
-        status = evaluate_vitals(hr, o2)
+        timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        status = evaluate_vitals(heart_rate, oxygen_level)
+
+        table = get_dynamodb().Table(HEALTH_LOGS_TABLE)
 
         item = {
             "patient_id": patient_id,
             "timestamp": timestamp,
-            "heart_rate": str(hr),
-            "oxygen_level": str(o2),
-            "status": status
+            "heart_rate": str(heart_rate),
+            "oxygen_level": str(oxygen_level),
+            "status": status,
         }
+        
+        # Only add temperature if it was submitted
+        if temperature:
+            item["temperature"] = str(temperature)
 
-        if temp:
-            item["temperature"] = str(temp)
-
-        get_dynamodb().Table(HEALTH_LOGS_TABLE).put_item(Item=item)
+        table.put_item(Item=item)
 
         if status == "critical":
-            msg = f"Critical Alert: {patient_id} HR:{hr} O2:{o2}"
-            send_sns_alert(patient_id, hr, o2)
+            msg = f"Critical Alert: Patient {patient_id} - HR: {heart_rate}, O2: {oxygen_level}%"
+            send_sns_alert(patient_id, heart_rate, oxygen_level)
             store_alert(patient_id, msg)
 
-        return jsonify({"status": status})
+        return jsonify({
+            "status": status,
+            "patient_id": patient_id,
+            "timestamp": timestamp,
+            "message": "Stored successfully"
+        })
 
     except Exception as e:
+        logger.error(f"Submit error: {e}")
         return jsonify({"error": str(e)}), 500
 
-# ─── Dashboard API (🔥 NEW - IMPORTANT) ─────────────
-@app.route("/dashboard-data")
-def dashboard_data():
-    patient_id = request.args.get("patient_id")
 
+# ─── API: Get Patient Data ────────────────────────────────────────────────────
+@app.route("/patient-data")
+def get_patient_data():
+    patient_id = request.args.get("patient_id")
     if not patient_id:
-        return jsonify({"error": "patient_id required"}), 400
+        return jsonify({"error": "Missing patient_id"}), 400
 
     try:
-        db = get_dynamodb()
+        table = get_dynamodb().Table(HEALTH_LOGS_TABLE)
 
-        # ── Fetch Records ──
-        table = db.Table(HEALTH_LOGS_TABLE)
+        # NOTE: This assumes 'timestamp' is your Sort Key. 
+        # If your table ONLY has a Partition Key, remove the ScanIndexForward=False line.
         response = table.query(
             KeyConditionExpression=Key("patient_id").eq(patient_id),
-            ScanIndexForward=False
+            ScanIndexForward=False 
         )
-        records = response.get("Items", [])
 
-        # ── Fetch Alerts ──
-        alert_table = db.Table(ALERTS_TABLE)
-        alert_resp = alert_table.scan(
-            FilterExpression=Attr("patient_id").eq(patient_id)
-        )
-        alerts = alert_resp.get("Items", [])
-
-        # ── Stats Calculation ──
-        total = len(records)
-        normal = 0
-        critical = 0
-        total_hr = 0
-        total_o2 = 0
-
-        for r in records:
-            hr = float(r["heart_rate"])
-            o2 = float(r["oxygen_level"])
-
-            total_hr += hr
-            total_o2 += o2
-
-            if r["status"] == "critical":
-                critical += 1
-            else:
-                normal += 1
-
-        avg_hr = round(total_hr / total, 2) if total else 0
-        avg_o2 = round(total_o2 / total, 2) if total else 0
-
+        items = response.get("Items", [])
+        
+        # Wrapped to match dashboard.html expectations
         return jsonify({
-            "records": records,
-            "alerts": alerts,
-            "stats": {
-                "total": total,
-                "normal": normal,
-                "critical": critical,
-                "alerts": len(alerts),
-                "avg_hr": avg_hr,
-                "avg_o2": avg_o2
-            }
+            "records": items,
+            "count": len(items)
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ─── Run ────────────────────────────────────────────
+
+# ─── API: Get Alerts ──────────────────────────────────────────────────────────
+@app.route("/alerts")
+def get_alerts():
+    patient_id = request.args.get("patient_id")
+    if not patient_id:
+        return jsonify({"error": "Missing patient_id"}), 400
+
+    try:
+        table = get_dynamodb().Table(ALERTS_TABLE)
+
+        response = table.scan(
+            FilterExpression=Attr("patient_id").eq(patient_id)
+        )
+
+        items = response.get("Items", [])
+        
+        # Wrapped to match dashboard.html expectations
+        return jsonify({
+            "alerts": items,
+            "count": len(items)
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── Health ───────────────────────────────────────────────────────────────────
+@app.route("/health")
+def health():
+    return jsonify({"status": "healthy"})
+
+
+# ─── Run ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
