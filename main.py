@@ -22,6 +22,7 @@ app = Flask(__name__)
 # ─── ENV VARIABLES (IAM + .env) ───────────────────────────────────────────────
 # Correctly fetch the SNS topic from environment variable, fallback to your provided ARN
 SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN", "arn:aws:sns:ap-south-1:152655458564:health_care")
+AWS_REGION = os.getenv("AWS_DEFAULT_REGION", "ap-south-1")
 
 if not SNS_TOPIC_ARN:
     logger.warning("⚠️ SNS_TOPIC_ARN not set in environment")
@@ -36,15 +37,15 @@ ALERTS_TABLE = "alerts"
 # - AWS_DEFAULT_REGION from environment
 
 def get_dynamodb():
-    return boto3.resource("dynamodb")
+    return boto3.resource("dynamodb", region_name=AWS_REGION)
 
 def get_sns():
-    return boto3.client("sns")
+    return boto3.client("sns", region_name=AWS_REGION)
 
 # ─── Ensure Tables Exist (SAFE VERSION) ───────────────────────────────────────
 def ensure_tables_exist():
     try:
-        client = boto3.client("dynamodb")
+        client = boto3.client("dynamodb", region_name=AWS_REGION)
         existing_tables = client.list_tables()["TableNames"]
 
         if HEALTH_LOGS_TABLE not in existing_tables:
@@ -98,10 +99,9 @@ def store_alert(patient_id, message):
         logger.error(f"Alert store error: {e}")
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
-def startup():
+with app.app_context():
     ensure_tables_exist()
     logger.info("App started with IAM role authentication")
-
 
 # ─── Routes (Pages) ───────────────────────────────────────────────────────────
 @app.route("/")
@@ -168,8 +168,8 @@ def submit_data():
         })
 
     except Exception as e:
-        logger.error(f"Submit error: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Submit error: {e}", exc_info=True)
+        return jsonify({"error": str(e), "detail": str(e)}), 500
 
 
 # ─── API: Get Patient Data ────────────────────────────────────────────────────
@@ -234,9 +234,5 @@ def health():
 
 
 # ─── Run ──────────────────────────────────────────────────────────────────────
-# REMOVE all earlier __main__ blocks
-
-# keep ONLY this at bottom
 if __name__ == "__main__":
-    startup()
     app.run(host="0.0.0.0", port=5000)
