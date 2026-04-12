@@ -3,49 +3,63 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Submit Vitals — VitalWatch</title>
+  <title>Sign In — VitalWatch</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --ink: #0a0f1e; --paper: #f5f3ee; --accent: #e84855;
-      --accent2: #2563eb; --muted: #6b7280; --border: #e5e0d8;
-      --card: #ffffff; --green: #16a34a; --yellow: #d97706;
+      --muted: #6b7280; --border: #e5e0d8; --card: #ffffff;
+      --green: #16a34a;
     }
-    body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; display: grid; place-items: center; }
+    .page-wrap { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; width: 100%; }
 
-    /* Nav */
-    nav {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 1.2rem 3rem; background: var(--ink); color: var(--paper);
+    /* Left panel */
+    .brand-panel {
+      background: var(--ink); color: var(--paper);
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 4rem; position: relative; overflow: hidden;
     }
-    .nav-logo { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--paper); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
-    .nav-logo span { color: var(--accent); }
-    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pd 1.4s infinite; }
-    @keyframes pd { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.5);opacity:0.6;} }
-    .nav-links { display: flex; gap: 1.5rem; }
-    .nav-links a { font-size: 0.85rem; color: rgba(245,243,238,0.7); text-decoration: none; font-weight: 500; transition: color 0.2s; }
-    .nav-links a:hover, .nav-links a.active { color: var(--paper); }
+    .brand-panel::before {
+      content: ''; position: absolute; top: -80px; right: -80px;
+      width: 300px; height: 300px; border-radius: 50%; background: rgba(232,72,85,0.12);
+    }
+    .brand-panel::after {
+      content: ''; position: absolute; bottom: -60px; left: -60px;
+      width: 220px; height: 220px; border-radius: 50%; background: rgba(37,99,235,0.1);
+    }
+    .brand-logo { font-family: 'DM Serif Display', serif; font-size: 2rem; margin-bottom: 3rem; display: flex; align-items: center; gap: 0.5rem; }
+    .brand-logo span { color: var(--accent); }
+    .pulse-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.5);opacity:0.6;} }
+    .brand-headline { font-family: 'DM Serif Display', serif; font-size: 2.2rem; line-height: 1.2; margin-bottom: 1.5rem; }
+    .brand-headline em { font-style: italic; color: var(--accent); }
+    .brand-desc { font-size: 0.9rem; color: rgba(245,243,238,0.6); line-height: 1.7; }
 
-    /* Layout */
-    .main { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
-    .page-header { margin-bottom: 2.5rem; }
-    .page-eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
-    .page-title { font-family: 'DM Serif Display', serif; font-size: 2.2rem; }
-    .page-desc { color: var(--muted); font-size: 0.9rem; margin-top: 0.4rem; }
+    .vitals-mini {
+      margin-top: 3rem; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .vitals-mini-title { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,243,238,0.4); margin-bottom: 1rem; }
+    .mini-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .mini-val { font-family: 'DM Serif Display', serif; font-size: 1.8rem; color: var(--paper); }
+    .mini-label { font-size: 0.72rem; color: rgba(245,243,238,0.4); }
+    .mini-status { margin-top: 1rem; font-size: 0.78rem; color: #4ade80; display: flex; align-items: center; gap: 0.4rem; }
+    .mini-status::before { content: ''; width: 6px; height: 6px; background: #4ade80; border-radius: 50%; animation: pulse 1.2s infinite; }
 
-    /* Grid */
-    .submit-grid { display: grid; grid-template-columns: 1fr 380px; gap: 2rem; align-items: start; }
+    /* Right / Form */
+    .form-panel { display: flex; flex-direction: column; justify-content: center; padding: 4rem; background: var(--card); }
+    .form-header { margin-bottom: 2.5rem; }
+    .form-eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; }
+    .form-title { font-family: 'DM Serif Display', serif; font-size: 2.2rem; line-height: 1.1; }
+    .form-subtitle { font-size: 0.88rem; color: var(--muted); margin-top: 0.5rem; }
+    .form-subtitle a { color: var(--accent); text-decoration: none; font-weight: 600; }
 
-    /* Form card */
-    .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; }
-    .form-section-title { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
-
-    .form-group { margin-bottom: 1.4rem; }
-    label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.45rem; color: var(--ink); }
-    .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; }
-    .label-hint { font-size: 0.72rem; color: var(--muted); }
-    input[type=text], input[type=number] {
+    .form-group { margin-bottom: 1.2rem; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.4rem; }
+    input {
       width: 100%; padding: 0.8rem 1rem;
       border: 1.5px solid var(--border); border-radius: 8px;
       font-family: 'DM Sans', sans-serif; font-size: 0.92rem;
@@ -53,317 +67,108 @@
       transition: border-color 0.2s, box-shadow 0.2s; outline: none;
     }
     input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(10,15,30,0.06); }
-    input.valid { border-color: var(--green); }
-    input.warning { border-color: var(--yellow); }
-    input.critical { border-color: var(--accent); }
 
-    .input-with-indicator { position: relative; }
-    .vital-indicator {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.5rem;
-      border-radius: 4px; display: none;
-    }
-    .vital-indicator.show { display: block; }
-    .vi-normal { background: #dcfce7; color: var(--green); }
-    .vi-critical { background: #fef2f2; color: var(--accent); }
-
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-meta { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
+    .form-meta a { font-size: 0.82rem; color: var(--accent); text-decoration: none; }
 
     .btn-submit {
-      width: 100%; padding: 1rem; background: var(--ink); color: var(--paper);
-      border: none; border-radius: 10px;
-      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
-      cursor: pointer; transition: background 0.2s; margin-top: 0.5rem;
-      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      width: 100%; padding: 0.9rem; background: var(--ink); color: var(--paper);
+      border: none; border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
     }
-    .btn-submit:hover { background: var(--accent2); }
+    .btn-submit:hover { background: var(--accent); }
     .btn-submit:disabled { background: var(--muted); cursor: not-allowed; }
 
-    .spinner {
-      width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite;
-      display: none;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .btn-submit.loading .spinner { display: block; }
-
-    /* Alert boxes */
-    .alert-box { padding: 1rem 1.2rem; border-radius: 10px; font-size: 0.88rem; margin-bottom: 1.2rem; display: none; }
+    .alert-box { padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; display: none; }
     .alert-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
     .alert-success { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
-    .alert-critical { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
 
-    /* Side panel */
-    .side-panel { display: flex; flex-direction: column; gap: 1.5rem; }
-    .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; }
-    .info-card-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-    .threshold-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
-    .threshold-item:last-child { border-bottom: none; }
-    .threshold-val { font-weight: 700; }
-    .badge { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
-    .badge-red { background: #fef2f2; color: var(--accent); }
-    .badge-green { background: #dcfce7; color: var(--green); }
+    .divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; color: var(--muted); font-size: 0.82rem; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-    /* Recent submissions */
-    .recent-item {
-      padding: 0.9rem; border-radius: 10px;
-      border: 1px solid var(--border); margin-bottom: 0.75rem;
-      font-size: 0.82rem;
-    }
-    .recent-header { display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
-    .recent-pid { font-weight: 700; font-size: 0.85rem; }
-    .recent-time { color: var(--muted); font-size: 0.75rem; }
-    .recent-vitals { color: var(--muted); }
-    .status-pill { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
-    .status-normal { background: #dcfce7; color: var(--green); }
-    .status-critical { background: #fef2f2; color: var(--accent); }
-
-    @media (max-width: 768px) {
-      nav { padding: 1rem 1.5rem; }
-      .submit-grid { grid-template-columns: 1fr; }
-      .form-row { grid-template-columns: 1fr; }
-      .main { padding: 1.5rem 1rem; }
-    }
+    @media (max-width: 768px) { .page-wrap { grid-template-columns: 1fr; } .brand-panel { display: none; } .form-panel { padding: 2rem; } }
   </style>
 </head>
 <body>
-
-<nav>
-  <a href="/" class="nav-logo"><div class="pulse-dot"></div>Vital<span>Watch</span></a>
-  <div class="nav-links">
-    <a href="/dashboard">Dashboard</a>
-    <a href="/patient" class="active">Submit Vitals</a>
-    <a href="/login">Sign In</a>
-  </div>
-</nav>
-
-<div class="main">
-  <div class="page-header">
-    <div class="page-eyebrow">Data Entry</div>
-    <h1 class="page-title">Submit Patient Vitals</h1>
-    <p class="page-desc">Record real-time health metrics. Critical readings trigger immediate SNS alerts.</p>
+<div class="page-wrap">
+  <div class="brand-panel">
+    <div class="brand-logo"><div class="pulse-dot"></div>Vital<span>Watch</span></div>
+    <h1 class="brand-headline">Welcome<br><em>back, Doctor.</em></h1>
+    <p class="brand-desc">Your patients are being monitored. Sign in to view live vitals and critical alerts across all wards.</p>
+    <div class="vitals-mini">
+      <div class="vitals-mini-title">Live System Status</div>
+      <div class="mini-metrics">
+        <div class="mini-metric"><div class="mini-val" id="liveHr">82</div><div class="mini-label">Heart Rate (bpm)</div></div>
+        <div class="mini-metric"><div class="mini-val" id="liveO2">97</div><div class="mini-label">SpO₂ (%)</div></div>
+      </div>
+      <div class="mini-status">All systems operational</div>
+    </div>
   </div>
 
-  <div class="submit-grid">
-    <!-- FORM -->
-    <div class="form-card">
-      <div class="form-section-title">Patient Information & Vitals</div>
-
-      <div class="alert-box alert-error" id="errorBox"></div>
-      <div class="alert-box alert-success" id="successBox"></div>
-      <div class="alert-box alert-critical" id="criticalBox"></div>
-
-      <div class="form-group">
-        <label for="patientId">Patient ID</label>
-        <input type="text" id="patientId" placeholder="e.g. P101, P202" oninput="validateId(this)"/>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <div class="label-row">
-            <label for="heartRate">Heart Rate</label>
-            <span class="label-hint">Normal: 60–100 bpm</span>
-          </div>
-          <div class="input-with-indicator">
-            <input type="number" id="heartRate" placeholder="e.g. 78" min="20" max="250" oninput="checkHr(this)"/>
-            <div class="vital-indicator" id="hrIndicator"></div>
-          </div>
-        </div>
-        <div class="form-group">
-          <div class="label-row">
-            <label for="oxygenLevel">Oxygen Level (SpO₂)</label>
-            <span class="label-hint">Normal: ≥90%</span>
-          </div>
-          <div class="input-with-indicator">
-            <input type="number" id="oxygenLevel" placeholder="e.g. 97" min="50" max="100" oninput="checkO2(this)"/>
-            <div class="vital-indicator" id="o2Indicator"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <div class="label-row">
-          <label for="temperature">Temperature (°F) <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
-          <span class="label-hint">Normal: 97–99°F</span>
-        </div>
-        <input type="number" id="temperature" placeholder="e.g. 98.6" step="0.1" min="90" max="115"/>
-      </div>
-
-      <button class="btn-submit" id="submitBtn" onclick="submitVitals()">
-        <div class="spinner" id="spinner"></div>
-        <span id="btnText">Submit Vitals to DynamoDB</span>
-      </button>
+  <div class="form-panel">
+    <div class="form-header">
+      <div class="form-eyebrow">Sign In</div>
+      <h2 class="form-title">Access your<br>monitoring hub</h2>
+      <p class="form-subtitle">No account yet? <a href="/register">Create one here</a></p>
     </div>
 
-    <!-- SIDE -->
-    <div class="side-panel">
-      <div class="info-card">
-        <div class="info-card-title">🚨 Critical Thresholds</div>
-        <div class="threshold-item">
-          <span>Heart Rate</span>
-          <div>
-            <span class="threshold-val">≤100 bpm</span>
-            <span class="badge badge-green">Normal</span>
-          </div>
-        </div>
-        <div class="threshold-item">
-          <span>Heart Rate</span>
-          <div>
-            <span class="threshold-val">&gt;110 bpm</span>
-            <span class="badge badge-red">Critical</span>
-          </div>
-        </div>
-        <div class="threshold-item">
-          <span>SpO₂</span>
-          <div>
-            <span class="threshold-val">≥90%</span>
-            <span class="badge badge-green">Normal</span>
-          </div>
-        </div>
-        <div class="threshold-item">
-          <span>SpO₂</span>
-          <div>
-            <span class="threshold-val">&lt;90%</span>
-            <span class="badge badge-red">Critical</span>
-          </div>
-        </div>
-        <p style="font-size:0.75rem;color:var(--muted);margin-top:1rem;">Critical readings trigger AWS SNS notifications and are stored in the alerts table.</p>
-      </div>
+    <div class="alert-box alert-error" id="errorBox"></div>
+    <div class="alert-box alert-success" id="successBox"></div>
 
-      <div class="info-card">
-        <div class="info-card-title">📋 Recent Submissions</div>
-        <div id="recentList">
-          <p style="font-size:0.82rem;color:var(--muted);">No submissions yet this session.</p>
-        </div>
-      </div>
+    <div class="form-group">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" placeholder="doctor@hospital.org"/>
     </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Your password"/>
+    </div>
+    <div class="form-meta">
+      <a href="#">Forgot password?</a>
+    </div>
+    <button class="btn-submit" id="loginBtn" onclick="handleLogin()">Sign In to Dashboard</button>
+
+    <div class="divider">or</div>
+    <p style="text-align:center; font-size:0.82rem; color:var(--muted);">
+      <a href="/" style="color:var(--ink); font-weight:600; text-decoration:none;">← Back to Home</a>
+    </p>
   </div>
 </div>
 
 <script>
-  const recentSubmissions = [];
-
-  function validateId(el) {
-    el.classList.toggle('valid', el.value.trim().length > 0);
-  }
-
-  function checkHr(el) {
-    const v = parseFloat(el.value);
-    const ind = document.getElementById('hrIndicator');
-    el.classList.remove('valid', 'critical');
-    ind.classList.remove('show', 'vi-normal', 'vi-critical');
-    if (!isNaN(v)) {
-      if (v > 110) {
-        el.classList.add('critical');
-        ind.textContent = 'CRITICAL'; ind.classList.add('show', 'vi-critical');
-      } else {
-        el.classList.add('valid');
-        ind.textContent = 'Normal'; ind.classList.add('show', 'vi-normal');
-      }
-    }
-  }
-
-  function checkO2(el) {
-    const v = parseFloat(el.value);
-    const ind = document.getElementById('o2Indicator');
-    el.classList.remove('valid', 'critical');
-    ind.classList.remove('show', 'vi-normal', 'vi-critical');
-    if (!isNaN(v)) {
-      if (v < 90) {
-        el.classList.add('critical');
-        ind.textContent = 'CRITICAL'; ind.classList.add('show', 'vi-critical');
-      } else {
-        el.classList.add('valid');
-        ind.textContent = 'Normal'; ind.classList.add('show', 'vi-normal');
-      }
-    }
-  }
+  // Animate demo vitals
+  setInterval(() => {
+    document.getElementById('liveHr').textContent = Math.floor(Math.random() * 20) + 72;
+    document.getElementById('liveO2').textContent = Math.floor(Math.random() * 4) + 95;
+  }, 2000);
 
   function showAlert(type, msg) {
-    ['errorBox','successBox','criticalBox'].forEach(id => {
-      document.getElementById(id).style.display = 'none';
-    });
-    const el = document.getElementById(type + 'Box');
-    el.innerHTML = msg; el.style.display = 'block';
+    const err = document.getElementById('errorBox');
+    const suc = document.getElementById('successBox');
+    err.style.display = 'none'; suc.style.display = 'none';
+    if (type === 'error') { err.textContent = msg; err.style.display = 'block'; }
+    else { suc.textContent = msg; suc.style.display = 'block'; }
   }
 
-  function addRecent(data) {
-    recentSubmissions.unshift(data);
-    if (recentSubmissions.length > 5) recentSubmissions.pop();
-    renderRecent();
+  function handleLogin() {
+    const email = document.getElementById('email').value.trim();
+    const pass = document.getElementById('password').value;
+    if (!email || !pass) { showAlert('error', 'Please enter your email and password.'); return; }
+
+    const btn = document.getElementById('loginBtn');
+    btn.textContent = 'Signing in…'; btn.disabled = true;
+
+    // Simulated auth — replace with real endpoint if adding user auth to backend
+    setTimeout(() => {
+      showAlert('success', 'Authenticated! Redirecting to dashboard…');
+      btn.textContent = 'Sign In to Dashboard'; btn.disabled = false;
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
+    }, 1000);
   }
 
-  function renderRecent() {
-    const container = document.getElementById('recentList');
-    if (!recentSubmissions.length) {
-      container.innerHTML = '<p style="font-size:0.82rem;color:var(--muted);">No submissions yet this session.</p>';
-      return;
-    }
-    container.innerHTML = recentSubmissions.map(d => `
-      <div class="recent-item">
-        <div class="recent-header">
-          <span class="recent-pid">${d.patient_id}</span>
-          <span class="status-pill ${d.status === 'critical' ? 'status-critical' : 'status-normal'}">${d.status.toUpperCase()}</span>
-        </div>
-        <div class="recent-vitals">HR: ${d.heart_rate} bpm · O₂: ${d.oxygen_level}%</div>
-        <div class="recent-time">${d.timestamp}</div>
-      </div>
-    `).join('');
-  }
-
-  async function submitVitals() {
-    const patientId = document.getElementById('patientId').value.trim();
-    const heartRate = parseFloat(document.getElementById('heartRate').value);
-    const oxygenLevel = parseFloat(document.getElementById('oxygenLevel').value);
-    const tempVal = document.getElementById('temperature').value;
-
-    if (!patientId) { showAlert('error', 'Please enter a Patient ID.'); return; }
-    if (isNaN(heartRate)) { showAlert('error', 'Please enter a valid Heart Rate.'); return; }
-    if (isNaN(oxygenLevel)) { showAlert('error', 'Please enter a valid Oxygen Level.'); return; }
-
-    const payload = { patient_id: patientId, heart_rate: heartRate, oxygen_level: oxygenLevel };
-    if (tempVal) payload.temperature = parseFloat(tempVal);
-
-    const btn = document.getElementById('submitBtn');
-    const spinner = document.getElementById('spinner');
-    const btnText = document.getElementById('btnText');
-    btn.disabled = true; spinner.style.display = 'block'; btnText.textContent = 'Submitting…';
-
-    try {
-      const res = await fetch('/submit-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.detail || 'Submission failed.');
-
-      addRecent(data);
-
-      if (data.status === 'critical') {
-        showAlert('critical', `⚠️ <strong>Critical Alert Triggered!</strong> Patient ${data.patient_id} has abnormal vitals. SNS notification sent and alert logged in DynamoDB.`);
-      } else {
-        showAlert('success', `✓ Vitals recorded successfully for <strong>${data.patient_id}</strong>. Status: Normal. Timestamp: ${data.timestamp}`);
-      }
-
-      // Reset form
-      document.getElementById('heartRate').value = '';
-      document.getElementById('oxygenLevel').value = '';
-      document.getElementById('temperature').value = '';
-      ['heartRate','oxygenLevel'].forEach(id => {
-        const el = document.getElementById(id);
-        el.classList.remove('valid','critical');
-      });
-      document.getElementById('hrIndicator').classList.remove('show');
-      document.getElementById('o2Indicator').classList.remove('show');
-
-    } catch (err) {
-      showAlert('error', `Error: ${err.message}`);
-    } finally {
-      btn.disabled = false; spinner.style.display = 'none'; btnText.textContent = 'Submit Vitals to DynamoDB';
-    }
-  }
+  // Allow Enter key
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 </script>
 </body>
 </html>
